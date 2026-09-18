@@ -10,14 +10,7 @@ contract DeployMerkleNFTMinter is Script {
 
         vm.startBroadcast();
 
-        nft = new MerkleNFTMinter(
-            "Merkle NFT",
-            "MNFT",
-            0.01 ether,
-            100,
-            5,
-            "ipfs://collection/"
-        );
+        nft = new MerkleNFTMinter("Merkle NFT", "MNFT", 0.01 ether, 100, 5, "ipfs://collection/");
 
         nft.setMerkleRoot(merkleRoot);
 
