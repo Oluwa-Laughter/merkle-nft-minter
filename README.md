@@ -16,6 +16,47 @@ on-chain individually.
 - Token IDs starting at `1`
 - Metadata formatted as `<baseURI><tokenId>.json`
 
+## Architecture
+
+```mermaid
+flowchart TD
+        Owner[Owner] --> Admin[Admin controls]
+        Admin --> Root[Set Merkle root]
+        Admin --> Phase[Set sale phase]
+        Admin --> URI[Set base URI]
+        Admin --> Pause[Pause or unpause]
+        Admin --> Withdraw[Withdraw ETH]
+
+        Minter[Minter] --> Inactive[Inactive]
+        Minter --> Allowlist[Allowlist mint]
+        Minter --> Public[Public mint]
+
+        Allowlist --> Leaf[Build leaf from wallet and allowance]
+        Leaf --> Proof[Verify sorted Merkle proof]
+        Proof --> Allowance[Check remaining wallet allowance]
+        Public --> Limit[Check public wallet limit]
+
+        Allowance --> Payment[Check exact payment]
+        Limit --> Payment
+        Payment --> Supply[Check maximum supply]
+        Supply --> ERC721[Mint ERC-721 tokens]
+        ERC721 --> Metadata[baseURI + tokenId + .json]
+```
+
+### Contract responsibilities
+
+- **Administration:** The deployer is the immutable owner and controls the
+  Merkle root, sale phase, metadata base URI, pause state, and withdrawals.
+- **Sale routing:** `phase` selects either `allowlistMint` or `publicMint`;
+  minting is rejected when the phase does not match the entry point.
+- **Allowlist validation:** The leaf is
+  `keccak256(abi.encodePacked(msg.sender, maxAllowance))`. The proof is
+  reconstructed with sorted hash pairs and compared with `merkleRoot`.
+- **Mint accounting:** `allowlistMinted` tracks consumed allowlist allowance,
+  `publicMinted` tracks public claims, and `totalSupply` tracks all tokens.
+- **Token layer:** Successful mints assign sequential token IDs, update
+  ownership and balances, and emit ERC-721 `Transfer` events.
+
 ## Minting Flow
 
 ```text
